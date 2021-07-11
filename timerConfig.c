@@ -10,6 +10,7 @@
 void timerGpio_Config(){
 	// SET UP PINS FOR INPUT CAPTURE MODE
 	RCC->AHB4ENR |= RCC_AHB4ENR_GPIOAEN;	// Enable peripheral clock for GPIOA
+	RCC->AHB4ENR |= RCC_AHB4ENR_GPIOEEN;	// Enable peripheral clock for GPIOE
 
 	// Configure PIN-A6 for input capture mode
 	// Mode Register set up for Alternate function for PIN-A6
@@ -74,7 +75,7 @@ void timer_Config(){
 	TIM15->SMCR &= ~TIM_SMCR_SMS;
 
 //------------------------------------------------------------------------------------------//
-	// INPUT CAPTURE MODE CONFIGURATIONS FOR TIMER 15 CHANNEL  1
+	// INPUT CAPTURE MODE CONFIGURATIONS FOR TIMER 3 CHANNEL  1
 	// Note: CC1S bits are writable only when the channel is OFF (CC1E = 0 in TIMx_CCER).
 	// Making sure bit is clear
 	TIM3->CCER &= ~TIM_CCER_CC1E;
@@ -100,8 +101,8 @@ void timer_Config(){
 	// Enable timer3
 	TIM3->CR1 |= TIM_CR1_CEN;
 //------------------------------------------------------------------------------------------//
-	// INPUT CAPTURE MODE CONFIGURATIONS FOR TIMER 15 CHANNEL  2
-	// Note: CC1S bits are writable only when the channel is OFF (CC2E = 0 in TIMx_CCER).
+	// INPUT CAPTURE MODE CONFIGURATIONS FOR TIMER 15 CHANNEL  1
+	// Note: CC1S bits are writable only when the channel is OFF (CC1E = 0 in TIMx_CCER).
 	// Making sure bit is clear
 	TIM15->CCER &= ~TIM_CCER_CC2E;
 	// channel is configured as input, IC2 is mapped on TI2
@@ -121,9 +122,9 @@ void timer_Config(){
 	// Enable interrupt
 	TIM15->DIER  |= TIM_DIER_CC2IE;
 
-	NVIC_SetPriority(TIM15_IRQn, 1);
+	NVIC_SetPriority(TIM15_IRQn, 0);
 	NVIC_EnableIRQ(TIM15_IRQn);
-	// Enable timer3
+	// Enable timer15
 	TIM15->CR1 |= TIM_CR1_CEN;
 }
 // Timer3 interrupt handler
@@ -142,18 +143,19 @@ void TIM3_IRQHandler(void){
 		}
 	}
 }
+// Timer15 interrupt handler
 void TIM15_IRQHandler(void){
 // Capture/compare 1 interrupt flag(The counter value has been captured in TIM3_CCR1 register)
-	if ((TIM15->SR & TIM_SR_CC1IF)){
-		// Check if pin E6 is high or low in order to know the start and end of the pulse
+	if ((TIM15->SR & TIM_SR_CC2IF)){
+		// Check if pin A6 is high or low in order to know the start and end of the pulse
 		if ((GPIOE->IDR & 0b01000000)){
-			channel_2_start = (int32_t)TIM15->CCR1;
-			TIM15->CCER  |= TIM_CCER_CC1P; // Change Trigger condition to falling edge
+			channel_2_start = (int32_t)TIM15->CCR2;
+			TIM15->CCER  |= TIM_CCER_CC2P; // Change Trigger condition to falling edge
 		}
 		else{
-			channel_2 = (int32_t)TIM15->CCR1 - (int32_t)channel_2_start;
+			channel_2 = (int32_t)TIM15->CCR2 - (int32_t)channel_2_start;
 			if( channel_2 < 0)channel_2 += 0xFFFF;
-			TIM15->CCER &= ~TIM_CCER_CC1P; // Change Trigger condition to rising edge
+			TIM15->CCER &= ~TIM_CCER_CC2P; // Change Trigger condition to rising edge
 		}
 	}
 }
